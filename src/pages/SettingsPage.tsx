@@ -1,23 +1,20 @@
-import { useState } from 'react';
-import { Users, Play, Shield, CheckCircle } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
 
-type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error';
+import React, { useState } from 'react';
+import { Users, Play, Shield, CheckCircle } from 'lucide-react';
+
+type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
 interface SettingsPageProps {
   setCurrentPage: (page: Page) => void;
-  handleTryDemo: () => void;
 }
 
-export const SettingsPage = ({ setCurrentPage, handleTryDemo }: SettingsPageProps) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
   const [selectedVoice, setSelectedVoice] = useState('female-us');
   const [videoLength, setVideoLength] = useState('standard');
   const [visualStyle, setVisualStyle] = useState('modern');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
-      <Navigation currentPage="settings" setCurrentPage={setCurrentPage} handleTryDemo={handleTryDemo} />
-      
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Settings & Preferences</h1>
@@ -195,4 +192,6 @@ export const SettingsPage = ({ setCurrentPage, handleTryDemo }: SettingsPageProp
       </main>
     </div>
   );
-};
+}
+
+export default SettingsPage;

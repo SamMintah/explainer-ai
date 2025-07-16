@@ -1,14 +1,17 @@
+
+
+import React from 'react';
 import { X, RefreshCw } from 'lucide-react';
 
-type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error';
+type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
 interface ErrorPageProps {
   errorType: 'url' | 'file' | 'generation' | 'network';
-  setCurrentPage: (page: Page) => void;
   handleRetry: () => void;
+  setCurrentPage: (page: Page) => void;
 }
 
-export const ErrorPage = ({ errorType, setCurrentPage, handleRetry }: ErrorPageProps) => {
+const ErrorPage: React.FC<ErrorPageProps> = ({ errorType, handleRetry, setCurrentPage }) => {
   const errorMessages = {
     url: {
       title: 'Unable to Access URL',
@@ -98,4 +101,7 @@ export const ErrorPage = ({ errorType, setCurrentPage, handleRetry }: ErrorPageP
       </div>
     </div>
   );
-};
+}
+
+export default ErrorPage;
+

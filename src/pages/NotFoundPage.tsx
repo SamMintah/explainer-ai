@@ -1,10 +1,13 @@
-type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error';
+
+import React from 'react';
+
+type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
 interface NotFoundPageProps {
   setCurrentPage: (page: Page) => void;
 }
 
-export const NotFoundPage = ({ setCurrentPage }: NotFoundPageProps) => (
+const NotFoundPage: React.FC<NotFoundPageProps> = ({ setCurrentPage }) => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 flex items-center justify-center">
     <div className="text-center max-w-md mx-4">
       <div className="w-24 h-24 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -23,3 +26,5 @@ export const NotFoundPage = ({ setCurrentPage }: NotFoundPageProps) => (
     </div>
   </div>
 );
+
+export default NotFoundPage;

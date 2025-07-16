@@ -1,14 +1,14 @@
-import { Play, Download, Edit3, Sparkles, CheckCircle, Clock, FileText } from 'lucide-react';
-import { Navigation } from '../components/Navigation';
 
-type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error';
+import React from 'react';
+import { Play, Download, Edit3, Sparkles, CheckCircle, Clock, FileText } from 'lucide-react';
+
+type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
 interface HistoryPageProps {
   setCurrentPage: (page: Page) => void;
-  handleTryDemo: () => void;
 }
 
-export const HistoryPage = ({ setCurrentPage, handleTryDemo }: HistoryPageProps) => {
+const HistoryPage: React.FC<HistoryPageProps> = ({ setCurrentPage }) => {
   const mockVideos = [
     {
       id: 1,
@@ -50,8 +50,6 @@ export const HistoryPage = ({ setCurrentPage, handleTryDemo }: HistoryPageProps)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
-      <Navigation currentPage="history" setCurrentPage={setCurrentPage} handleTryDemo={handleTryDemo} />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Your Video Library</h1>
@@ -156,4 +154,6 @@ export const HistoryPage = ({ setCurrentPage, handleTryDemo }: HistoryPageProps)
       </main>
     </div>
   );
-};
+}
+
+export default HistoryPage;

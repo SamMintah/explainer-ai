@@ -1,10 +1,12 @@
+
+import React from 'react';
 import { RefreshCw, CheckCircle } from 'lucide-react';
 
 interface LoadingPageProps {
   loadingStep: number;
 }
 
-export const LoadingPage = ({ loadingStep }: LoadingPageProps) => {
+const LoadingPage: React.FC<LoadingPageProps> = ({ loadingStep }) => {
   const steps = [
     'Analyzing content...',
     'Generating script...',
@@ -57,4 +59,6 @@ export const LoadingPage = ({ loadingStep }: LoadingPageProps) => {
       </div>
     </div>
   );
-};
+}
+
+export default LoadingPage;

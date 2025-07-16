@@ -1,23 +1,32 @@
-import React, { useState } from 'react';
-import { HomePage } from './pages/HomePage';
-import { AppPage } from './pages/AppPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { LoadingPage } from './pages/LoadingPage';
-import { ErrorPage } from './pages/ErrorPage';
-import { NotFoundPage } from './pages/NotFoundPage';
 
-type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error';
+import React, { useState } from 'react';
+import Navigation from './components/Navigation';
+import HomePage from './pages/HomePage';
+import LoadingPage from './pages/LoadingPage';
+import HistoryPage from './pages/HistoryPage';
+import SettingsPage from './pages/SettingsPage';
+import ErrorPage from './pages/ErrorPage';
+import AppPage from './pages/AppPage';
+import NotFoundPage from './pages/NotFoundPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
+import PricingPage from './pages/PricingPage';
+
+type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentView, setCurrentView] = useState<'input' | 'workspace'>('input');
   const [loadingStep, setLoadingStep] = useState(0);
   const [errorType, setErrorType] = useState<'url' | 'file' | 'generation' | 'network'>('url');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const shouldShowNavigation = (): boolean => {
+    const pagesWithNavigation: Page[] = ['home', 'app', 'history', 'settings', 'pricing'];
+    return pagesWithNavigation.includes(currentPage);
+  };
 
   const handleGenerate = () => {
-    setIsGenerating(true);
     setCurrentPage('loading');
     setLoadingStep(0);
     
@@ -32,9 +41,8 @@ function App() {
       if (step >= steps.length) {
         clearInterval(interval);
         setTimeout(() => {
-          setIsGenerating(false);
-          setCurrentPage('app');
           setCurrentView('workspace');
+          setCurrentPage('app');
         }, 500);
       }
     }, 1500);
@@ -42,6 +50,9 @@ function App() {
 
   const handleTryDemo = () => {
     setCurrentPage('app');
+  };
+
+  const handleBackToInput = () => {
     setCurrentView('input');
   };
 
@@ -52,28 +63,82 @@ function App() {
 
   const handleRetry = () => {
     setCurrentPage('app');
-    setCurrentView('input');
   };
 
-  // Render current page
-  switch (currentPage) {
-    case 'home':
-      return <HomePage setCurrentPage={setCurrentPage} handleGenerate={handleGenerate} handleTryDemo={handleTryDemo} />;
-    case 'app':
-      return <AppPage setCurrentPage={setCurrentPage} handleGenerate={handleGenerate} handleTryDemo={handleTryDemo} handleError={handleError} currentView={currentView} isGenerating={isGenerating} />;
-    case 'history':
-      return <HistoryPage setCurrentPage={setCurrentPage} handleTryDemo={handleTryDemo} />;
-    case 'settings':
-      return <SettingsPage setCurrentPage={setCurrentPage} handleTryDemo={handleTryDemo} />;
-    case 'loading':
-      return <LoadingPage loadingStep={loadingStep} />;
-    case 'error':
-      return <ErrorPage errorType={errorType} setCurrentPage={setCurrentPage} handleRetry={handleRetry} />;
-    case '404':
-      return <NotFoundPage setCurrentPage={setCurrentPage} />;
-    default:
-      return <HomePage setCurrentPage={setCurrentPage} handleGenerate={handleGenerate} handleTryDemo={handleTryDemo} />;
-  }
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentPage('home');
+  };
+
+  const handleSocialLogin = (provider: string) => {
+    console.log(`Logging in with ${provider}`);
+    // Here you would integrate with your auth provider
+    // For demo purposes, we'll just redirect to the app
+    setIsLoggedIn(true);
+    setTimeout(() => {
+      setCurrentPage('app');
+    }, 1000);
+  };
+
+  // Reset view to input when navigating away from app page
+  const handlePageChange = (page: Page) => {
+    if (page !== 'app') {
+      setCurrentView('input');
+    }
+    setCurrentPage(page);
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage setCurrentPage={handlePageChange} handleGenerate={handleGenerate} />;
+      case 'loading':
+        return <LoadingPage loadingStep={loadingStep} />;
+      case 'history':
+        return <HistoryPage setCurrentPage={handlePageChange} />;
+      case 'settings':
+        return <SettingsPage setCurrentPage={handlePageChange} />;
+      case 'error':
+        return <ErrorPage errorType={errorType} handleRetry={handleRetry} setCurrentPage={handlePageChange} />;
+      case 'app':
+        return <AppPage 
+          setCurrentPage={handlePageChange} 
+          handleGenerate={handleGenerate} 
+          handleError={handleError}
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          handleBackToInput={handleBackToInput}
+        />;
+      case 'signin':
+        return <SignInPage onSocialLogin={handleSocialLogin} onNavigate={handlePageChange} />;
+      case 'signup':
+        return <SignUpPage onSocialLogin={handleSocialLogin} onNavigate={handlePageChange} />;
+      case 'pricing':
+        return <PricingPage setCurrentPage={handlePageChange} />;
+      default:
+        return <NotFoundPage setCurrentPage={handlePageChange} />;
+    }
+  };
+
+  return (
+    <div>
+      {shouldShowNavigation() && (
+        <Navigation 
+          currentPage={currentPage}
+          setCurrentPage={handlePageChange}
+          handleTryDemo={handleTryDemo}
+          isLoggedIn={isLoggedIn}
+          handleLogin={handleLogin}
+          handleLogout={handleLogout}
+        />
+      )}
+      {renderPage()}
+    </div>
+  );
 }
 
 export default App;
