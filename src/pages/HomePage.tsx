@@ -20,11 +20,12 @@ type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error
 
 interface HomePageProps {
   setCurrentPage: (page: Page) => void;
-  handleGenerate: () => void;
+  handleGenerate: (url: string) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ setCurrentPage, handleGenerate }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [url, setUrl] = useState('');
 
   // Background animation particles
   const particles = Array.from({ length: 20 }, (_, i) => ({
@@ -109,13 +110,16 @@ const HomePage: React.FC<HomePageProps> = ({ setCurrentPage, handleGenerate }) =
               <div className="flex-1 max-w-md">
                 <input
                   type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
                   placeholder="Paste a link to try..."
                   className="w-full px-6 py-4 text-lg border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
               <button 
-                onClick={handleGenerate}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                onClick={() => handleGenerate(url)}
+                disabled={!url.trim()}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-5 h-5" />
                 <span>Generate Video</span>
@@ -124,9 +128,24 @@ const HomePage: React.FC<HomePageProps> = ({ setCurrentPage, handleGenerate }) =
 
             <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
               <span>Try examples:</span>
-              <button className="text-purple-600 hover:text-purple-700 font-medium">Wikipedia Article</button>
-              <button className="text-purple-600 hover:text-purple-700 font-medium">Medium Post</button>
-              <button className="text-purple-600 hover:text-purple-700 font-medium">Research Paper</button>
+              <button 
+                onClick={() => setUrl('https://en.wikipedia.org/wiki/Machine_learning')}
+                className="text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Wikipedia Article
+              </button>
+              <button 
+                onClick={() => setUrl('https://medium.com/@example/understanding-artificial-intelligence')}
+                className="text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Medium Post
+              </button>
+              <button 
+                onClick={() => setUrl('https://arxiv.org/abs/1706.03762')}
+                className="text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Research Paper
+              </button>
             </div>
           </div>
         </section>

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { Play, ArrowLeft, Github, Twitter } from 'lucide-react';
+import { Play, ArrowLeft, Github, Twitter, AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
@@ -11,14 +12,41 @@ interface SignInPageProps {
 
 const SignInPage: React.FC<SignInPageProps> = ({ onSocialLogin, onNavigate }) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      onNavigate('app');
+    }
+  }, [isAuthenticated, onNavigate]);
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(provider);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(null);
-    onSocialLogin(provider);
+    setError(null);
+    
+    try {
+      const success = await login(provider);
+      if (success) {
+        onSocialLogin(provider);
+        onNavigate('app');
+      } else {
+        setError(`Failed to sign in with ${provider}. Please try again.`);
+      }
+    } catch (err) {
+      console.error(`${provider} login error:`, err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : `An error occurred while signing in with ${provider}. Please try again.`
+      );
+    } finally {
+      setIsLoading(null);
+    }
   };
+
+  const clearError = () => setError(null);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
@@ -60,12 +88,29 @@ const SignInPage: React.FC<SignInPageProps> = ({ onSocialLogin, onNavigate }) =>
 
         {/* Sign In Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-800 text-sm font-medium">Authentication Error</p>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <button
+                  onClick={clearError}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium mt-2 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* Google Login */}
             <button
               onClick={() => handleSocialLogin('google')}
-              disabled={isLoading !== null}
-              className="w-full flex items-center justify-center space-x-3 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading !== null || authLoading}
+              className="w-full flex items-center justify-center space-x-3 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
               {isLoading === 'google' ? (
                 <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
@@ -83,8 +128,8 @@ const SignInPage: React.FC<SignInPageProps> = ({ onSocialLogin, onNavigate }) =>
             {/* GitHub Login */}
             <button
               onClick={() => handleSocialLogin('github')}
-              disabled={isLoading !== null}
-              className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading !== null || authLoading}
+              className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
               {isLoading === 'github' ? (
                 <div className="w-5 h-5 border-2 border-slate-300 border-t-white rounded-full animate-spin" />
@@ -97,8 +142,8 @@ const SignInPage: React.FC<SignInPageProps> = ({ onSocialLogin, onNavigate }) =>
             {/* Twitter Login */}
             <button
               onClick={() => handleSocialLogin('twitter')}
-              disabled={isLoading !== null}
-              className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading !== null || authLoading}
+              className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
               {isLoading === 'twitter' ? (
                 <div className="w-5 h-5 border-2 border-blue-300 border-t-white rounded-full animate-spin" />

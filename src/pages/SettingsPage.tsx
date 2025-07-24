@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Users, Play, Shield, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Play, Shield, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 type Page = 'home' | 'app' | 'history' | 'settings' | 'loading' | '404' | 'error' | 'signin' | 'signup' | 'pricing';
 
@@ -8,10 +8,144 @@ interface SettingsPageProps {
   setCurrentPage: (page: Page) => void;
 }
 
+// Types for user settings
+interface UserSettings {
+  voice: string;
+  speakingSpeed: number;
+  videoLength: string;
+  visualStyle: string;
+  autoSave: boolean;
+  emailNotifications: boolean;
+  analytics: boolean;
+}
+
+// API functions for settings management
+const getAuthToken = (): string | null => {
+  return localStorage.getItem('jwt-token');
+};
+
+const apiRequest = async <T,>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const token = getAuthToken();
+  const API_BASE_URL = process.env.NODE_ENV === "production"
+    ? process.env.VITE_API_URL || "https://api.explainer.ai"
+    : "http://localhost:3001/api";
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+const loadUserSettings = async (): Promise<UserSettings> => {
+  return apiRequest<UserSettings>('/user/settings');
+};
+
+const saveUserSettings = async (settings: UserSettings): Promise<void> => {
+  await apiRequest('/user/settings', {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  });
+};
+
 const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
+  // State for settings
   const [selectedVoice, setSelectedVoice] = useState('female-us');
+  const [speakingSpeed, setSpeakingSpeed] = useState(1);
   const [videoLength, setVideoLength] = useState('standard');
   const [visualStyle, setVisualStyle] = useState('modern');
+  const [autoSave, setAutoSave] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(false);
+  const [analytics, setAnalytics] = useState(true);
+
+  // State for UI
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Load settings on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const settings = await loadUserSettings();
+        
+        setSelectedVoice(settings.voice);
+        setSpeakingSpeed(settings.speakingSpeed);
+        setVideoLength(settings.videoLength);
+        setVisualStyle(settings.visualStyle);
+        setAutoSave(settings.autoSave);
+        setEmailNotifications(settings.emailNotifications);
+        setAnalytics(settings.analytics);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load settings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  // Save settings function
+  const handleSaveSettings = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccessMessage(null);
+
+      const settings: UserSettings = {
+        voice: selectedVoice,
+        speakingSpeed,
+        videoLength,
+        visualStyle,
+        autoSave,
+        emailNotifications,
+        analytics,
+      };
+
+      await saveUserSettings(settings);
+      setSuccessMessage('Settings saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Clear error message
+  const clearError = () => setError(null);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-slate-600">Loading your settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
@@ -20,6 +154,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Settings & Preferences</h1>
           <p className="text-xl text-slate-600">Customize your explainer video generation experience</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-800">{error}</p>
+              <button
+                onClick={clearError}
+                className="text-red-600 hover:text-red-800 text-sm underline mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
 
         <div className="space-y-8">
           {/* Voice Settings */}
@@ -58,7 +216,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Speaking Speed</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Speaking Speed ({speakingSpeed}x)
+                </label>
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-slate-500">Slow</span>
                   <input 
@@ -66,7 +226,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
                     min="0.5" 
                     max="2" 
                     step="0.1" 
-                    defaultValue="1"
+                    value={speakingSpeed}
+                    onChange={(e) => setSpeakingSpeed(parseFloat(e.target.value))}
                     className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                   />
                   <span className="text-sm text-slate-500">Fast</span>
@@ -152,7 +313,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
                   <div className="text-sm text-slate-500">Automatically save videos to your library</div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={autoSave}
+                    onChange={(e) => setAutoSave(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
               </div>
@@ -163,7 +329,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
                   <div className="text-sm text-slate-500">Get notified when videos are ready</div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={emailNotifications}
+                    onChange={(e) => setEmailNotifications(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
               </div>
@@ -174,7 +345,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
                   <div className="text-sm text-slate-500">Help us improve the service with usage data</div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={analytics}
+                    onChange={(e) => setAnalytics(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
               </div>
@@ -183,9 +359,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ setCurrentPage }) => {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5" />
-              <span>Save Settings</span>
+            <button 
+              onClick={handleSaveSettings}
+              disabled={saving}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Save Settings</span>
+                </>
+              )}
             </button>
           </div>
         </div>
